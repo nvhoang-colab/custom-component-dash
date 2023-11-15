@@ -1,0 +1,45 @@
+{
+    "columnDefines": [
+        {
+            "headerName": "Vehicle Type",
+            "field": "vehicle_type",
+            "data_type": "text",
+            "unit": ""
+        },
+        {
+            "headerName": "Capacity",
+            "field": "capacity",
+            "data_type": "number",
+            "unit": "kg"
+        },
+        {
+            "headerName": "Bin Size",
+            "children": [
+                {
+                    "headerName": "Length",
+                    "field": "length",
+                    "data_type": "number",
+                    "unit": "cm"
+                },
+                {
+                    "headerName": "Width",
+                    "field": "width",
+                    "data_type": "number",
+                    "unit": "cm"
+                },
+                {
+                    "headerName": "Height",
+                    "field": "height",
+                    "data_type": "number",
+                    "unit": "cm"
+                }
+            ]
+        },
+        {
+            "headerName": "CBM",
+            "field": "cbm",
+            "data_type": "number",
+            "unit": "cm3"
+        }
+    ]
+}

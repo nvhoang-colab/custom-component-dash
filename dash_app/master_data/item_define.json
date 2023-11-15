@@ -1,0 +1,45 @@
+{
+    "columnDefines": [
+        {
+            "headerName": "Name of Item",
+            "field": "item_name",
+            "data_type": "text",
+            "unit": ""
+        },
+        {
+            "headerName": "weight",
+            "field": "weight",
+            "data_type": "number",
+            "unit": "kg"
+        },
+        {
+            "headerName": "Item Size",
+            "children": [
+                {
+                    "headerName": "Length",
+                    "field": "length",
+                    "data_type": "number",
+                    "unit": "cm"
+                },
+                {
+                    "headerName": "Width",
+                    "field": "width",
+                    "data_type": "number",
+                    "unit": "cm"
+                },
+                {
+                    "headerName": "Height",
+                    "field": "height",
+                    "data_type": "number",
+                    "unit": "cm"
+                }
+            ]
+        },
+        {
+            "headerName": "CBM",
+            "field": "cbm",
+            "data_type": "number",
+            "unit": "cm3"
+        }
+    ]
+}
