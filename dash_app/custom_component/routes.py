@@ -1,17 +1,34 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List
-from .base_component import BaseComponent
+from .base_component import *
 from .component_register import component_register
-from .components import *
 import dash_mantine_components as dmc
 
 import dash_bootstrap_components as dbc
 from dash import Dash, html, Input, Output, State
 
 @dataclass
-class Route(BaseComponent):
-    href: str = ''
+@component_register
+class NavigationRoute(Route):
+    children: FullyStructuredComponent = None
 
+    def __post_init__(self):
+        super().__post_init__()
+
+    @property
+    def index(self):
+        return f"route-{self._index}"
+
+    
+    def make_layout(self):
+        return html.Div(
+                    id=self.index,
+                    children=self.children.layout
+                )
+
+    def register_callback(self, dash_app: Dash):
+        super().register_callback(dash_app)
+    
 STEP_LABEL = ["First", "Second", "Third", "Fourth", "Fifth", "Sixth"]
 
 @dataclass

@@ -15,7 +15,7 @@ class MetaComponent(ABC):
     children: Optional[Union[Self, List[Self]]]
     layout: Component
     
-    @abstractproperty
+    @property
     def index(self):
         pass
     
@@ -36,6 +36,10 @@ class BaseComponent(MetaComponent):
     @property
     def index(self):
         return self._index
+    
+    @index.setter
+    def index(self, _value):
+        self._index = _value
     
     def make_layout(self) -> Component:
         return html.Div(f"Component {self.__class__.__name__}:\nname = {self.name}, index = {self.index}", id=self.index)
@@ -74,34 +78,44 @@ class BaseComponent(MetaComponent):
             
 
 @dataclass
+class Route(BaseComponent):
+    href: str = ''
+
+@dataclass
 class CollapsibleComponent(BaseComponent):
+    collapse_id: str = ''
     
     @property
-    def collapse_id(self):
-        return f"{self._index}-collapse"
+    def index(self):
+        return self._index
+    
+    @index.setter
+    def index(self, _value):
+        self.collapse_id = f"{_value}-collapse"
+        self._index = _value
     
     def collapse_content(self, is_open: bool = False):
         return dbc.Collapse(self.layout, id=self.collapse_id, is_open=is_open)
     
 @dataclass
 class FullyStructuredComponent(BaseComponent):
+    header_id: str = ''
+    nav_id: str = ''
+    body_id: str = ''
+    footer_id: str = ''
     
     @property
-    def header_id(self):
-        return f"{self._index}-header"
+    def index(self):
+        return self._index
     
-    @property
-    def nav_id(self):
-        return f"{self._index}-nav"
-    
-    @property
-    def body_id(self):
-        return f"{self._index}-body"
-    
-    @property
-    def footer_id(self):
-        return f"{self._index}-footer"
-    
+    @index.setter
+    def index(self, _value):
+        self.header_id = f"{_value}-header"
+        self.nav_id = f"{_value}-nav"
+        self.body_id = f"{_value}-body"
+        self.footer_id = f"{_value}-footer"
+        self._index = _value
+
     @property
     def header(self):
         return html.Div(f"This is header of {self.name} {self.__class__.__name__}", id=self.header_id)

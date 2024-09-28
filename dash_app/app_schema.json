@@ -1,38 +1,18 @@
 {
     "routes": [
         {
-            "name": "FAKE INPUT",
-            "_index": "fake-input",
-            "href": "fake_input",
-            "type": "StepperNavigationRoute",
-            "children": [
-                {
-                    "name": "MASTER DATA",
-                    "_index": "master-data",
-                    "type": "FullyStructuredCard",
-                    "children": {
-                        "type": "TabsCollapse",
-                        "children": [
-                            {
-                                "name": "vehicle",
-                                "_index": "vehicle",
-                                "type": "GridCRUD",
-                                "grid_define_source": "vehicle_define.json",
-                                "data_source": "vehicle_data.csv",
-                                "children": ""
-                            },
-                            {
-                                "name": "item",
-                                "_index": "item",
-                                "type": "GridCRUD",
-                                "grid_define_source": "item_define.json",
-                                "data_source": "item_data.csv",
-                                "children": ""
-                            }
-                        ]
-                    }
-                }
-            ]
+            "name": "Server Monitor",
+            "_index": "sv-moniter",
+            "href": "moniter",
+            "type": "NavigationRoute",
+            "children": {
+                "name": "Live Update",
+                "_index": "live-fig",
+                "type": "LiveUpdateFigure",
+                "window_size": 360,
+                "interval": 10000,
+                "children": []
+            }
         }
     ]
 }
