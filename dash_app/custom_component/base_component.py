@@ -62,8 +62,6 @@ class BaseComponent(MetaComponent):
         else:
             children_type = children_config.pop("type")
             children_cls = COMPONENT_CLASS.get(children_type, BaseComponent)
-            children_config["name"] = config["name"]
-            children_config["_index"] = config["_index"]
             children = children_cls.from_config(children_config)
         return cls(children=children, **config)
 
@@ -137,6 +135,6 @@ class FullyStructuredComponent(BaseComponent):
             self.header,
             self.nav,
             self.body,
-            self.footer
+            self.footer,
         ])
     

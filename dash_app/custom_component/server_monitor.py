@@ -8,11 +8,21 @@ import dash_mantine_components as dmc
 
 import pandas as pd
 import dash_bootstrap_components as dbc
-from dash import Dash, html, Input, Output, State, dcc
+from dash import Dash, html, Input, Output, State, dcc, ctx
 from plotly import graph_objects as go
 import psutil
 
-    
+
+def get_color(percent):
+    if percent > 90:
+        return 'red'
+    elif percent > 70:
+        return 'orange'
+    elif percent > 50:
+        return 'yellow'
+    else:
+        return 'green'
+
 @dataclass
 @component_register
 class LiveUpdateFigure(FullyStructuredComponent):
@@ -54,8 +64,19 @@ class LiveUpdateFigure(FullyStructuredComponent):
         return f"{self._index}-itv"
     
     @property
+    def current_text(self):
+        return f"{self._index}-txt"
+    
+    @property
     def header(self):
         return html.H1(self.name)
+    
+    @property
+    def nav(self):
+        return html.Div([
+            html.H4("Current Usage:"),
+            html.Div(id=self.current_text)
+        ])
     
     @property
     def body(self):
@@ -64,13 +85,35 @@ class LiveUpdateFigure(FullyStructuredComponent):
             dcc.Interval(
                 id=self.interval_index,
                 interval=self.interval,
-                n_intervals=0
+                n_intervals=0,
+                disabled=True
             )
     ])
+        
+    @property
+    def start_btn(self):
+        return f"{self._index}-start-btn"
+    
+    @property
+    def stop_btn(self):
+        return f"{self._index}-stop-btn"
+    
+    @property
+    def footer(self):
+        return html.Div([
+            dbc.Button("Start", id=self.start_btn, color="primary", className="me-1", disabled=False),
+            dbc.Button("Stop", id=self.stop_btn, color="danger", className="me-1"),
+        ])
         
     def update_figure(self):
         def func(n):
             data = self.get_current_data(n)
+            cur_time, cur_ram, cur_cpu = data.iloc[-1]
+            cur_text = [
+                html.Span(f'Current Time: {cur_time}', style=dict(padding='20px', fontSize='24px')),
+                html.Span(f'Current Usage Memory: {cur_ram:.2f}%', style=dict(padding='20px', fontSize='24px', color=get_color(cur_ram))),
+                html.Span(f'Current Usage CPU: {cur_cpu:.2f}%', style=dict(padding='20px', fontSize='24px', color=get_color(cur_cpu))),
+            ]
             fig = go.Figure()
             fig.add_trace(go.Scatter(
                     x = list(range(self.window_size)),
@@ -101,12 +144,31 @@ class LiveUpdateFigure(FullyStructuredComponent):
                     tickvals = list(range(0, 101, 25)),
                 ),
             )
-            return fig
+            return fig, cur_text
+        return func
+    
+    def monitor_control(self):
+        def func(n_start, n_stop):
+            triggered_id = ctx.triggered_id
+            if triggered_id == self.start_btn:
+                return False, True
+            elif triggered_id == self.stop_btn:
+                self.data = [None for _ in range(self.max_data_range)]
+                return True, False
+            return False, True
         return func
         
     def register_callback(self, dash_app: Dash):
         super().register_callback(dash_app)
         dash_app.callback(
             Output(self.fig_index, "figure"),
+            Output(self.current_text, "children"),
             Input(self.interval_index, "n_intervals"),
         )(self.update_figure())
+        dash_app.callback(
+            Output(self.interval_index, "disabled"),
+            Output(self.start_btn, "disabled"),
+            Input(self.start_btn, "n_clicks"),
+            Input(self.stop_btn, "n_clicks"),
+            prevent_initial_call=True,
+        )(self.monitor_control())
