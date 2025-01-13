@@ -125,7 +125,7 @@ class StepperNavigationRoute(Route):
                 step = step - 1
             if button_id == self.next_id:
                 step = step + 1
-                self.active = step
+            self.active = step
             if step == 0:
                 return step, True, False
             elif step < self.max_step:

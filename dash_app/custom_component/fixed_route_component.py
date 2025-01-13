@@ -107,6 +107,7 @@ class JsonUploader(SharedDataStep):
                 master_requests = {}
                 master_items = {}
                 for req in requests:
+                    req["itemGroupList"] = []
                     req["orderCode"] = req["orderCode"].split("_")[0]
                     items = req.pop("items")
                     new_items = {}
@@ -234,7 +235,7 @@ class XlsxUploader(SharedDataStep):
                 tripRequest = {}
                 tripVehicle = {}
                 alert = []
-                for _, row in df.iterrows():
+                for i, row in df.iterrows():
                     if pd.notna(row.truckType):
                         tripNo += 1
                         try:
@@ -254,6 +255,7 @@ class XlsxUploader(SharedDataStep):
                     try:
                         code, qtt = items_in_req.pop(row.sku)
                         md_item = cur_data["items"][row.sku]
+                        code = f'{code}-{str(tripNo)}-{i}'
                         new_it, qtt = self.get_item(md_item, code, row.quantity, qtt)
                     except KeyError:
                         alert.append(html.Div(f"Khong tim thay item [{row.sku} ({code})] trong input hoac so luong khong du."))
@@ -265,6 +267,18 @@ class XlsxUploader(SharedDataStep):
                     except:
                         req["items"] = [new_it]
                     tripRequest[str(tripNo)][orderCode] = req
+                for req in cur_data["requests"].values():
+                    item_in_req = req["items"]
+                    new_items = []
+                    for sku, value in item_in_req.items():
+                        code, qtt = value
+                        if qtt <= 0:
+                            continue
+                        code = f"UN{code}"
+                        md_item = cur_data["items"][sku]
+                        new_it, _ = self.get_item(md_item, code, qtt, qtt)
+                        new_items.append(new_it)
+                    req["items"] = new_items
                 cur_data["tripRequest"] = tripRequest
                 cur_data["tripVehicle"] = tripVehicle
         except Exception as e:
@@ -316,6 +330,10 @@ class Downloader(SharedDataStep):
         return f'download-{self.index}'
     
     @property
+    def run_id(self):
+        return f'run-{self.index}'
+    
+    @property
     def refresh_id(self):
         return f'refresh-{self.index}'
     
@@ -331,43 +349,78 @@ class Downloader(SharedDataStep):
                 mb=10,
             ),
             dmc.Button("Download", id=self.download_id),
-            dcc.Download(id="download-text")
+            dcc.Download(id="download-text"),
+            dmc.Button("Run", id=self.run_id),
+            html.Div(id="output-text")
         ])
     
     def selecter(self):
         def update_output(n, cur_data):
             if n and cur_data:
-                data = []
+                data = [dict(value="all", label="All Routes")]
                 for key in cur_data["tripRequest"].keys():
                     data.append(dict(value=key, label=f"Route {key}"))
                 return data
             return no_update
         return update_output
     
+    @staticmethod
+    def get_json(value, cur_data):
+        if value != "all":
+            requests = list(cur_data["tripRequest"].get(value, {}).values())
+            vehicles = cur_data["tripVehicle"].get(value, [])
+            for req in requests:
+                req["assignedVehicle"] = None
+                req["tripNo"] = value
+        else:
+            requests = []
+            vehicles = []
+            for vendor in cur_data["vehicles"].values():
+                for veh in vendor.values():
+                    vehicles += veh
+            for key in cur_data["tripRequest"].keys():
+                _reqs = list(cur_data["tripRequest"][key].values())
+                _vehs = cur_data["tripVehicle"][key]
+                for req in _reqs:
+                    req["orderCode"] = req["orderCode"] + key
+                    req["assignedVehicle"] = _vehs[0]["vehicleCode"]
+                    req["tripNo"] = key
+                requests += _reqs
+            requests += list(req for req in cur_data["requests"].values() if len(req["items"]))
+            
+        algoParams = cur_data["algoParams"]
+        name = f"M{int(time.time())}"
+        algoParams["trackingId"] += f"_{name}_{value}"
+        data = dict(
+            customers=cur_data["customers"],
+            depots=cur_data["depots"],  
+            distances=cur_data["distances"],  
+            locations=cur_data["locations"],  
+            matrixConfig=cur_data["matrixConfig"],  
+            algoParams=algoParams,  
+            routingFee=cur_data["routingFee"],  
+            requests=requests,
+            vehicles=vehicles,
+        )
+        return data, name
+        
     def downloader(self):
         def update_output(n, value, cur_data):
             if ctx.triggered_id == self.download_id:
-                requests = list(cur_data["tripRequest"][value].values())
-                for req in requests:
-                    req["assignedVehicle"] = None
-                    req["tripNo"] = value
-                algoParams = cur_data["algoParams"]
-                algoParams["trackingId"] += f"_M{int(time.time())}_{value}"
-                fn = f"{algoParams['trackingId']}.json"
-                data = dict(
-                    customers=cur_data["customers"],
-                    depots=cur_data["depots"],  
-                    distances=cur_data["distances"],  
-                    locations=cur_data["locations"],  
-                    matrixConfig=cur_data["matrixConfig"],  
-                    algoParams=algoParams,  
-                    routingFee=cur_data["routingFee"],  
-                    requests=requests,
-                    vehicles=cur_data["tripVehicle"][value],
-                )
+                data, name = self.get_json(value, cur_data)
                 json_data = json.dumps(data)
-                return dict(content=json_data, filename=fn)
+                return dict(content=json_data, filename=f'{name}.json')
             return no_update
+        return update_output
+    
+    def runner(self):
+        def update_output(n, value, cur_data):
+            import requests
+            if ctx.triggered_id == self.run_id:
+                data, name = self.get_json(value, cur_data)
+                requests.post("http://171.244.37.73:7000/vrp/fixed_route_internal", json=data, headers={"Content-Type":"application/json"})
+                return name
+            return ""
         return update_output
     
     def register_callback(self, dash_app: Dash):
@@ -383,3 +436,9 @@ class Downloader(SharedDataStep):
             Input(self.select_id, 'value'),
             Input('session-storage', 'data'),
         )(self.downloader())
+        dash_app.callback(
+            Output("output-text", "children"),
+            Input(self.run_id, 'n_clicks'),
+            Input(self.select_id, 'value'),
+            Input('session-storage', 'data'),
+        )(self.runner())
