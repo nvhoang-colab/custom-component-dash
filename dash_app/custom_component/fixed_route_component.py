@@ -129,10 +129,7 @@ class JsonUploader(SharedDataStep):
                     #     continue
                     vendor = veh['vType']['typeOfVehicleByVendor']
                     v, c = vendor.split('-')
-                    try:
-                        trans = VENDOR_CONVERT[v]
-                    except KeyError:
-                        trans = v.lower()
+                    trans = v.lower()
                     try:
                         truck = CAPACITY_CONVERT[c]
                     except KeyError:
