@@ -40,7 +40,9 @@ CAPACITY_CONVERT = {
     "VI": "11.0",
     "VK": "15.0",
     "VU": "2.0",
-    "VV": "3.5"
+    "VV": "3.5",
+    "VN": "Cont",
+    "VR": "VAN",
 }
 
 @dataclass
@@ -129,6 +131,9 @@ class JsonUploader(SharedDataStep):
                     v, c = vendor.split('-')
                     try:
                         trans = VENDOR_CONVERT[v]
+                    except KeyError:
+                        trans = v.lower()
+                    try:
                         truck = CAPACITY_CONVERT[c]
                     except KeyError:
                         return no_update, html.Div("Need more vehicle info")
