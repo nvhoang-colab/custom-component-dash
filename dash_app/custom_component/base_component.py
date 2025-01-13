@@ -1,4 +1,5 @@
 from typing import Optional, Union, List
+import uuid
 from typing_extensions import Self
 
 from dataclasses import dataclass, field
@@ -6,7 +7,7 @@ from dash import Dash, html
 import dash_bootstrap_components as dbc
 from dash.development.base_component import Component
 from abc import ABC, abstractproperty, abstractmethod
-from .component_register import COMPONENT_CLASS
+from .component_register import COMPONENT_CLASS, component_register
 
 @dataclass
 class MetaComponent(ABC):
@@ -51,7 +52,7 @@ class BaseComponent(MetaComponent):
             cls = COMPONENT_CLASS.get(cls_type, BaseComponent)
         children_config = config.pop("children", "")
         if isinstance(children_config, str):
-            children = children_config
+            children = BaseComponent('', str(uuid.uuid4()))
         elif isinstance(children_config, List):
             children = []
             for child_config in children_config:
@@ -96,11 +97,16 @@ class CollapsibleComponent(BaseComponent):
         return dbc.Collapse(self.layout, id=self.collapse_id, is_open=is_open)
     
 @dataclass
+@component_register
 class FullyStructuredComponent(BaseComponent):
     header_id: str = ''
     nav_id: str = ''
     body_id: str = ''
     footer_id: str = ''
+    
+    def __post_init__(self):
+        self.index = self._index
+        self.layout = self.make_layout()
     
     @property
     def index(self):

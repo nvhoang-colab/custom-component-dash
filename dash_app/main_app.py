@@ -3,6 +3,7 @@ import os
 
 from dataclasses import dataclass, field
 from typing import List
+import dash
 from dash import Dash, html, dcc, Input, Output
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
@@ -10,6 +11,8 @@ from .custom_component import PageNotFoundError, Route
 
 from .style import *
 from flask import Flask
+
+dash._dash_renderer._set_react_version('18.2.0')
 
 PATH = os.getcwd() + r'/dash_app'
 TITLE = 'SuperVRP Dashboard'
@@ -109,7 +112,7 @@ class MainApp:
         )(self.render_page_content())
         
 def create_dash_application(flask_app):
-    component = dmc.MantineProvider(forceColorScheme="dark")
+    # component = dmc.MantineProvider(forceColorScheme="dark")
     with open(f'{PATH}/app_schema.json') as f:
         app_schema = json.load(f)
     routes = []

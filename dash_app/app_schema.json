@@ -13,6 +13,32 @@
                 "interval": 10000,
                 "children": []
             }
+        },
+        {
+            "name": "Fixed Route",
+            "_index": "fixed-route",
+            "href": "fixed-route",
+            "type": "StepperNavigationRoute",
+            "children": [
+                {
+                    "name": "JSON Input",
+                    "_index": "json",
+                    "type": "JsonUploader",
+                    "children": ""
+                },
+                {
+                    "name": "Excel Manual",
+                    "_index": "excel",
+                    "type": "XlsxUploader",
+                    "children": ""
+                },
+                {
+                    "name": "Get Data",
+                    "_index": "get-data",
+                    "type": "Downloader",
+                    "children": ""
+                }
+            ]
         }
     ]
 }
