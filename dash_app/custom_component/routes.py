@@ -120,12 +120,11 @@ class StepperNavigationRoute(Route):
     def update_step(self):
         def update(b, n, cur):
             button_id = ctx.triggered_id
-            step = self.active
+            step = cur
             if button_id == self.back_id:
                 step = step - 1
             if button_id == self.next_id:
                 step = step + 1
-            self.active = step
             if step == 0:
                 return step, True, False
             elif step < self.max_step:
