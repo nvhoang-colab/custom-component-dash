@@ -236,6 +236,7 @@ class XlsxUploader(SharedDataStep):
             if 'csv' in content_type:
                 df = pd.read_csv(
                     io.StringIO(decoded.decode('utf-8')))
+                df.rename(columns=lambda x: x.strip(), inplace=True)
                 tripNo = -1
                 tripRequest = {}
                 tripVehicle = {}
@@ -261,9 +262,9 @@ class XlsxUploader(SharedDataStep):
                         code, qtt = items_in_req.pop(row.sku)
                         md_item = cur_data["items"][row.sku]
                         code = f'{code}-{str(tripNo)}-{i}'
-                        new_it, qtt = self.get_item(md_item, code, row.quantity, qtt)
+                        new_it, qtt = self.get_item(md_item, code, int(row.quantity), qtt)
                     except KeyError:
-                        alert.append(html.Div(f"Đơn hàng [{orderCode}] trong [JSON Input] không có (đủ) chi tiết đơn để tạo chuyến [{row.sku}]."))
+                        alert.append(html.Div(f"Đơn hàng [{orderCode}] trong [JSON Input] không có (đủ) chi tiết [{row.sku}] đơn để tạo chuyến."))
                         continue
                     if qtt > 0:
                         items_in_req[row.sku] = (code, qtt)
