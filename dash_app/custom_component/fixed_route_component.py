@@ -353,9 +353,9 @@ class Downloader(SharedDataStep):
                 w=200,
                 mb=10,
             ),
-            dmc.Button("Download", id=self.download_id),
-            dcc.Download(id="download-text"),
             dcc.Loading([
+                dmc.Button("Download", id=self.download_id),
+                dcc.Download(id="download-text"),
                 dmc.Button("Run", id=self.run_id),
                 html.Div(id="output-text")
             ])
