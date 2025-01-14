@@ -110,7 +110,8 @@ class JsonUploader(SharedDataStep):
                 master_items = {}
                 for req in requests:
                     req["itemGroupList"] = []
-                    req["orderCode"] = req["orderCode"].split("_")[0]
+                    orderCode = req["orderCode"]
+                    orderCode = orderCode.split("_")[0]
                     items = req.pop("items")
                     new_items = {}
                     for it in items:
@@ -118,10 +119,12 @@ class JsonUploader(SharedDataStep):
                         if sku not in master_items:
                             master_items[sku] = self.extract_item(it)
                         new_items[sku] = (it["itemCode"], it["quantity"])
-                    req["items"] = new_items
-                    if req["orderCode"] in master_requests:
-                        return no_update, html.Div("Need depot info")
-                    master_requests[req["orderCode"]] = req
+                    if orderCode in master_requests:
+                        master_requests[orderCode]["items"].update(new_items)
+                    else:
+                        req["orderCode"] = orderCode
+                        req["items"] = new_items
+                        master_requests[orderCode] = req
                 vehicles = data.get("vehicles")
                 master_vehicles = defaultdict(dict)
                 for veh in vehicles:
@@ -245,14 +248,14 @@ class XlsxUploader(SharedDataStep):
                         except KeyError:
                             tripVehicle[str(tripNo)] = []
                         if len(tripVehicle[str(tripNo)]) == 0:
-                            alert.append(html.Div(f"Nha thau [{row.vendor}] khong co loai xe truckType={row.truckType}"))
+                            alert.append(html.Div(f"Không tìm thấy loại [{row.vendor}-{row.truckType}] trong [JSON Input]"))
                         tripRequest[str(tripNo)] = {}
                     orderCode = str(row.orderCode)
                     try:
                         req = tripRequest[str(tripNo)].get(orderCode, cur_data["requests"][orderCode].copy())
                         items_in_req = cur_data["requests"][orderCode]["items"]
                     except KeyError:
-                        alert.append(html.Div(f"Khong tim thay orderCode [{orderCode}] trong input."))
+                        alert.append(html.Div(f"Không tìm thấy orderCode [{orderCode}] trong [JSON Input] để tạo chuyến."))
                         continue
                     try:
                         code, qtt = items_in_req.pop(row.sku)
@@ -260,7 +263,7 @@ class XlsxUploader(SharedDataStep):
                         code = f'{code}-{str(tripNo)}-{i}'
                         new_it, qtt = self.get_item(md_item, code, row.quantity, qtt)
                     except KeyError:
-                        alert.append(html.Div(f"Khong tim thay item [{row.sku} ({code})] trong input hoac so luong khong du."))
+                        alert.append(html.Div(f"Đơn hàng [{orderCode}] trong [JSON Input] không có (đủ) chi tiết đơn để tạo chuyến [{row.sku}]."))
                         continue
                     if qtt > 0:
                         items_in_req[row.sku] = (code, qtt)
@@ -352,8 +355,10 @@ class Downloader(SharedDataStep):
             ),
             dmc.Button("Download", id=self.download_id),
             dcc.Download(id="download-text"),
-            dmc.Button("Run", id=self.run_id),
-            html.Div(id="output-text")
+            dcc.Loading([
+                dmc.Button("Run", id=self.run_id),
+                html.Div(id="output-text")
+            ])
         ])
     
     def selecter(self):
